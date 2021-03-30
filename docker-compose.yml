@@ -1,0 +1,53 @@
+version: '3.6'
+services:
+
+  jenkins:
+    image: jenkins.nginx.docker:lts
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: jenkins
+    ports:
+      - '2022:22'
+      - '50000:50000'
+      - '50022:50022'
+    volumes:
+      - /var/aerpaw/jenkins/jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - UID_JENKINS=${UID_JENKINS:-1000}
+      - GID_JENKINS=${GID_JENKINS:-1000}
+      - JENKINS_OPTS=${JENKINS_OPTS:-"--prefix=/jenkins"}
+    restart: always
+
+  gitea:
+    image: gitea/gitea:1
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - APP_NAME="AERPAW Operator CI/CD"
+      - ROOT_URL="https://aerpaw-ci.renci.org/gitea/"
+      - DISABLE_REGISTRATION=true
+      - INSTALL_LOCK=true
+    volumes:
+      - /var/aerpaw/gitea/gitea_data:/data
+      # - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - '3000:3000'
+      - '3022:22'
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/index.html:/usr/share/nginx/html/index.html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - /root/cert:/etc/ssl
+      - /var/aerpaw/logs/nginx:/var/log/nginx
+    restart: always
